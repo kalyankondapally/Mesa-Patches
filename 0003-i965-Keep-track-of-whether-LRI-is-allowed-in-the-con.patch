@@ -1,0 +1,64 @@
+From dfeb9a6c28a958b95291fc97bb464748c7cda7e4 Mon Sep 17 00:00:00 2001
+From: Francisco Jerez <currojerez@riseup.net>
+Date: Thu, 3 Sep 2015 17:08:16 +0300
+Subject: [PATCH 03/15] i965: Keep track of whether LRI is allowed in the
+ context struct.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This stores the result of can_do_pipelined_register_writes() in the
+context struct so we can find out later whether LRI can be used to
+program the L3 configuration.
+
+v2:
+ * Split change of gen check in can_do_pipelined_register_writes (jljusten)
+
+Reviewed-by: Jordan Justen <jordan.l.justen@intel.com>
+Reviewed-by: Kristian Høgsberg  <krh@bitplanet.net>
+---
+ src/mesa/drivers/dri/i965/brw_context.h      | 5 +++++
+ src/mesa/drivers/dri/i965/intel_extensions.c | 4 +++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/src/mesa/drivers/dri/i965/brw_context.h b/src/mesa/drivers/dri/i965/brw_context.h
+index 3dedfe8..b747c99 100644
+--- a/src/mesa/drivers/dri/i965/brw_context.h
++++ b/src/mesa/drivers/dri/i965/brw_context.h
+@@ -842,6 +842,11 @@ struct brw_context
+    bool use_resource_streamer;
+ 
+    /**
++    * Whether LRI can be used to write register values from the batch buffer.
++    */
++   bool can_do_pipelined_register_writes;
++
++   /**
+     * Some versions of Gen hardware don't do centroid interpolation correctly
+     * on unlit pixels, causing incorrect values for derivatives near triangle
+     * edges.  Enabling this flag causes the fragment shader to use
+diff --git a/src/mesa/drivers/dri/i965/intel_extensions.c b/src/mesa/drivers/dri/i965/intel_extensions.c
+index da4b8ab..9bafef6 100644
+--- a/src/mesa/drivers/dri/i965/intel_extensions.c
++++ b/src/mesa/drivers/dri/i965/intel_extensions.c
+@@ -322,6 +322,8 @@ intelInitExtensions(struct gl_context *ctx)
+    }
+ 
+    brw->predicate.supported = false;
++   brw->can_do_pipelined_register_writes =
++      can_do_pipelined_register_writes(brw);
+ 
+    if (brw->gen >= 7) {
+       ctx->Extensions.ARB_conservative_depth = true;
+@@ -338,7 +340,7 @@ intelInitExtensions(struct gl_context *ctx)
+       ctx->Extensions.ARB_shader_storage_buffer_object = true;
+       ctx->Extensions.EXT_shader_samples_identical = true;
+ 
+-      if (can_do_pipelined_register_writes(brw)) {
++      if (brw->can_do_pipelined_register_writes) {
+          ctx->Extensions.ARB_draw_indirect = true;
+          ctx->Extensions.ARB_transform_feedback2 = true;
+          ctx->Extensions.ARB_transform_feedback3 = true;
+-- 
+1.9.1
+

@@ -1,0 +1,52 @@
+From 7a497cfbdb1b487dc28fe4e3f645163341a54dcb Mon Sep 17 00:00:00 2001
+From: Francisco Jerez <currojerez@riseup.net>
+Date: Wed, 25 Nov 2015 14:51:16 +0200
+Subject: [PATCH 15/15] i965: Document inconsistent units the URB size is
+ represented in.
+
+Every other gen the representation of the URB size was changed and
+previous ones weren't updated.  I'd be willing to write a series
+normalizing this to be KB on all generations if anybody else cares.
+---
+ src/mesa/drivers/dri/i965/brw_context.h     | 8 +++++++-
+ src/mesa/drivers/dri/i965/brw_device_info.h | 5 +++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/src/mesa/drivers/dri/i965/brw_context.h b/src/mesa/drivers/dri/i965/brw_context.h
+index fe60263..ce368cd 100644
+--- a/src/mesa/drivers/dri/i965/brw_context.h
++++ b/src/mesa/drivers/dri/i965/brw_context.h
+@@ -1000,7 +1000,13 @@ struct brw_context
+       GLuint clip_start;
+       GLuint sf_start;
+       GLuint cs_start;
+-      GLuint size; /* Hardware URB size, in KB. */
++      /**
++       * URB size in the current configuration.  The units this is expressed
++       * in are somewhat inconsistent, see brw_device_info::urb::size.
++       *
++       * FINISHME: Represent the URB size consistently in KB on all platforms.
++       */
++      GLuint size;
+ 
+       /* True if the most recently sent _3DSTATE_URB message allocated
+        * URB space for the GS.
+diff --git a/src/mesa/drivers/dri/i965/brw_device_info.h b/src/mesa/drivers/dri/i965/brw_device_info.h
+index 8d3af62..324c074 100644
+--- a/src/mesa/drivers/dri/i965/brw_device_info.h
++++ b/src/mesa/drivers/dri/i965/brw_device_info.h
+@@ -81,6 +81,11 @@ struct brw_device_info
+    unsigned max_cs_threads;
+ 
+    struct {
++      /**
++       * Hardware default URB size.  The units this is expressed in are
++       * somewhat inconsistent: 512b units on Gen4-5, KB on Gen6-7, and KB
++       * times the slice count on Gen8+.
++       */
+       unsigned size;
+       unsigned min_vs_entries;
+       unsigned max_vs_entries;
+-- 
+1.9.1
+

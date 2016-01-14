@@ -1,0 +1,81 @@
+From bf76bb0310447775888697b5429c5f648c97e6cd Mon Sep 17 00:00:00 2001
+From: Francisco Jerez <currojerez@riseup.net>
+Date: Sat, 5 Sep 2015 15:05:48 +0300
+Subject: [PATCH 12/15] i965: Add debug flag to print out the new L3 state
+ during transitions.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reviewed-by: Jordan Justen <jordan.l.justen@intel.com>
+Reviewed-by: Samuel Iglesias Gonsálvez <siglesias@igalia.com>
+Reviewed-by: Kenneth Graunke <kenneth@whitecape.org>
+Reviewed-by: Kristian Høgsberg  <krh@bitplanet.net>
+---
+ src/mesa/drivers/dri/i965/gen7_l3_state.c | 17 +++++++++++++++++
+ src/mesa/drivers/dri/i965/intel_debug.c   |  1 +
+ src/mesa/drivers/dri/i965/intel_debug.h   |  1 +
+ 3 files changed, 19 insertions(+)
+
+diff --git a/src/mesa/drivers/dri/i965/gen7_l3_state.c b/src/mesa/drivers/dri/i965/gen7_l3_state.c
+index f40910f..d9a2040 100644
+--- a/src/mesa/drivers/dri/i965/gen7_l3_state.c
++++ b/src/mesa/drivers/dri/i965/gen7_l3_state.c
+@@ -460,6 +460,18 @@ update_urb_size(struct brw_context *brw, const struct brw_l3_config *cfg)
+    }
+ }
+ 
++/**
++ * Print out the specified L3 configuration.
++ */
++static void
++dump_l3_config(const struct brw_l3_config *cfg)
++{
++   fprintf(stderr, "SLM=%d URB=%d ALL=%d DC=%d RO=%d IS=%d C=%d T=%d\n",
++           cfg->n[L3P_SLM], cfg->n[L3P_URB], cfg->n[L3P_ALL],
++           cfg->n[L3P_DC], cfg->n[L3P_RO],
++           cfg->n[L3P_IS], cfg->n[L3P_C], cfg->n[L3P_T]);
++}
++
+ static void
+ emit_l3_state(struct brw_context *brw)
+ {
+@@ -489,6 +501,11 @@ emit_l3_state(struct brw_context *brw)
+       setup_l3_config(brw, cfg);
+       update_urb_size(brw, cfg);
+       brw->l3.config = cfg;
++
++      if (unlikely(INTEL_DEBUG & DEBUG_L3)) {
++         fprintf(stderr, "L3 config transition (%f > %f): ", dw, dw_threshold);
++         dump_l3_config(cfg);
++      }
+    }
+ }
+ 
+diff --git a/src/mesa/drivers/dri/i965/intel_debug.c b/src/mesa/drivers/dri/i965/intel_debug.c
+index f53c4ab..3fe941c 100644
+--- a/src/mesa/drivers/dri/i965/intel_debug.c
++++ b/src/mesa/drivers/dri/i965/intel_debug.c
+@@ -79,6 +79,7 @@ static const struct debug_control debug_control[] = {
+    { "tcs",         DEBUG_TCS },
+    { "ds",          DEBUG_TES },
+    { "tes",         DEBUG_TES },
++   { "l3",          DEBUG_L3 },
+    { NULL,    0 }
+ };
+ 
+diff --git a/src/mesa/drivers/dri/i965/intel_debug.h b/src/mesa/drivers/dri/i965/intel_debug.h
+index 9c6030a..5d3f97a 100644
+--- a/src/mesa/drivers/dri/i965/intel_debug.h
++++ b/src/mesa/drivers/dri/i965/intel_debug.h
+@@ -71,6 +71,7 @@ extern uint64_t INTEL_DEBUG;
+ #define DEBUG_NO_COMPACTION       (1ull << 35)
+ #define DEBUG_TCS                 (1ull << 36)
+ #define DEBUG_TES                 (1ull << 37)
++#define DEBUG_L3                  (1ull << 38)
+ 
+ #ifdef HAVE_ANDROID_PLATFORM
+ #define LOG_TAG "INTEL-MESA"
+-- 
+1.9.1
+
